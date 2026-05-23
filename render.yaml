@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: trippinthecurl
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: node server.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: PAYPAL_MODE
+        value: live
+      - key: ENABLE_DEV_MOCK_PAYMENTS
+        value: false

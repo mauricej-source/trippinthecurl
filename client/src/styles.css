@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f8f5ee;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+}
+
+img {
+  display: block;
+  background: #eee7dc;
+}
+
+@layer components {
+  .button-primary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 bg-ink px-5 py-3 text-sm font-bold uppercase tracking-[0.14em] text-paper transition hover:bg-clay;
+  }
+
+  .button-secondary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 border border-ink/20 bg-gallery px-5 py-3 text-sm font-bold uppercase tracking-[0.14em] text-ink transition hover:border-clay hover:text-clay;
+  }
+
+  .tag {
+    @apply rounded-full border border-ink/10 bg-[#99d5e4] px-3 py-1 text-sm font-semibold text-graphite;
+  }
+
+  .social-link {
+    @apply border border-ink/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-graphite transition hover:border-[#bef1fe] hover:bg-[#bef1fe] hover:text-ink;
+  }
+
+  .payment-button {
+    @apply flex w-full items-center justify-between gap-4 border border-paper/15 bg-paper/[0.08] p-3 text-left text-paper transition hover:bg-paper/15 disabled:cursor-wait disabled:opacity-60;
+  }
+
+  .payment-button strong {
+    @apply block text-sm;
+  }
+
+  .payment-button small {
+    @apply mt-1 block text-xs leading-5 text-paper/[0.68];
+  }
+
+  .art-tile {
+    @apply bg-gallery p-3 text-left shadow-fine transition hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  .art-tile img {
+    @apply aspect-[4/3] w-full object-cover;
+  }
+
+  .art-tile span {
+    @apply mt-3 block text-sm font-bold uppercase tracking-[0.14em] text-graphite;
+  }
+
+  .home-art-card {
+    @apply grid min-h-[350px] gap-6 bg-[#4687a8] p-8 text-center transition hover:-translate-y-0.5 hover:shadow-fine;
+  }
+
+  .home-art-card h2 {
+    @apply font-serif text-[14px] font-bold uppercase leading-tight text-white;
+  }
+
+  .home-art-card img {
+    @apply mx-auto h-[19.5rem] w-full object-cover;
+  }
+
+  .artwork-detail-flow::after {
+    content: "";
+    display: block;
+    clear: both;
+  }
+
+  .artwork-detail-image {
+    @apply mb-5 w-full bg-transparent object-contain shadow-fine;
+  }
+
+  @screen lg {
+    .artwork-detail-image {
+      float: left;
+      width: min(64%, 980px);
+      max-height: calc(100vh - 15rem);
+      margin-right: 2rem;
+      object-fit: contain;
+    }
+  }
+}
