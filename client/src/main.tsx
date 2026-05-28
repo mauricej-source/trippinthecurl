@@ -28,7 +28,18 @@ import "./styles.css";
 
 type NavItem = { label: string; path: string };
 type LinkItem = { label: string; url: string };
-type ImageItem = { title: string; image: string; medium?: string; description?: string; price?: number; available?: boolean };
+type ImageItem = {
+  title: string;
+  image: string;
+  medium?: string;
+  description?: string;
+  price?: number;
+  available?: boolean;
+  commissioned?: boolean;
+  sold?: boolean;
+  gift?: boolean;
+  sequence?: number;
+};
 type Content = {
   site: { title: string; tagline: string; location: string; hours: string; email: string; phone: string };
   navigation: NavItem[];
@@ -71,6 +82,33 @@ type PayPalConfig = {
   serverVerified: boolean;
   devMockPayments: boolean;
 };
+type AdminOrder = {
+  id: string;
+  paypalOrderId: string;
+  paypalCaptureId: string;
+  status: string;
+  mode: "sandbox" | "live";
+  mock?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  artworkTitle: string;
+  artworkImage: string;
+  amount: number;
+  currency: string;
+  payerName: string;
+  payerEmail: string;
+  shippingName: string;
+  shippingAddress?: {
+    name: string;
+    line1: string;
+    line2: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    countryCode: string;
+    lines: string[];
+  } | null;
+};
 
 const routeTitles: Record<string, string> = {
   "/": "Home",
@@ -83,6 +121,89 @@ const routeTitles: Record<string, string> = {
   "/new-projects": "New Projects",
   "/admin": "Administration",
 };
+
+const SITE_URL = "https://trippinthecurl.com";
+const INDEX_ROBOTS = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+const NOINDEX_ROBOTS = "noindex, nofollow, noarchive";
+const DEFAULT_SOCIAL_IMAGE = `${SITE_URL}/images/backgroundimages/Oceanic%20Delight.jpg`;
+
+type RouteMeta = {
+  title: string;
+  description: string;
+  canonical: string;
+  robots: string;
+  image?: string;
+};
+
+const routeMetadata: Record<string, RouteMeta> = {
+  "/": {
+    title: "TrippinTheCurl | Artwork, Publications, and Projects by Maurice C. Johnson III",
+    description: "Explore TrippinTheCurl, the artwork, publications, professional profile, software domains, and creative projects of Maurice C. Johnson III.",
+    canonical: `${SITE_URL}/`,
+    robots: INDEX_ROBOTS,
+    image: DEFAULT_SOCIAL_IMAGE,
+  },
+  "/hireme": {
+    title: "Senior Solutions Engineer | Maurice C. Johnson III",
+    description: "Review Maurice C. Johnson III's professional profile, resume, technical skills, certifications, and senior solutions engineering experience.",
+    canonical: `${SITE_URL}/hireme`,
+    robots: INDEX_ROBOTS,
+  },
+  "/contact": {
+    title: "Contact TrippinTheCurl | Maurice C. Johnson III",
+    description: "Contact Maurice C. Johnson III for artwork, publications, interviews, review copies, professional inquiries, and TrippinTheCurl questions.",
+    canonical: `${SITE_URL}/contact`,
+    robots: INDEX_ROBOTS,
+  },
+  "/about": {
+    title: "About the Artist | Maurice C. Johnson III",
+    description: "Learn about Maurice C. Johnson III, the artist behind TrippinTheCurl, his creative influences, artistic mission, and website vision.",
+    canonical: `${SITE_URL}/about`,
+    robots: INDEX_ROBOTS,
+  },
+  "/portfolio": {
+    title: "Original Artwork Portfolio | TrippinTheCurl",
+    description: "Browse the TrippinTheCurl original artwork portfolio by Maurice C. Johnson III, including paintings, drawings, sculptures, and mixed-media works.",
+    canonical: `${SITE_URL}/portfolio`,
+    robots: INDEX_ROBOTS,
+  },
+  "/publications": {
+    title: "A Fractured I.T. by Maurice C. Johnson III | TrippinTheCurl",
+    description: "Read about A Fractured I.T., a cautionary book on artificial intelligence, automation, careers, and the human cost of innovation.",
+    canonical: `${SITE_URL}/publications`,
+    robots: INDEX_ROBOTS,
+    image: `${SITE_URL}/images/bookcovers/Fractured_JaneEyre_Audience_Cropped.png`,
+  },
+  "/domains": {
+    title: "Software Domains and AI Projects | TrippinTheCurl",
+    description: "Explore software domains and AI-assisted projects by Maurice C. Johnson III, including AI UNIT Calculator and related product ideas.",
+    canonical: `${SITE_URL}/domains`,
+    robots: INDEX_ROBOTS,
+  },
+  "/new-projects": {
+    title: "New Artwork Projects | TrippinTheCurl",
+    description: "View current TrippinTheCurl works in progress, including Oceanic Delight, 420 at the Watertower, and other developing artwork projects.",
+    canonical: `${SITE_URL}/new-projects`,
+    robots: INDEX_ROBOTS,
+  },
+  "/admin": {
+    title: "Administration | TrippinTheCurl",
+    description: "Private administration area for TrippinTheCurl portfolio, artwork sales, content, and PayPal configuration.",
+    canonical: `${SITE_URL}/admin`,
+    robots: NOINDEX_ROBOTS,
+  },
+};
+
+function metadataForPath(path: string): RouteMeta {
+  return (
+    routeMetadata[path] ?? {
+      title: "Page Not Found | TrippinTheCurl",
+      description: "The requested TrippinTheCurl page could not be found.",
+      canonical: `${SITE_URL}${path}`,
+      robots: NOINDEX_ROBOTS,
+    }
+  );
+}
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -103,6 +224,62 @@ function formatCurrency(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+function safeFilename(value: string) {
+  return value.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "receipt";
+}
+
+function receiptText(order: AdminOrder) {
+  const shippingLines = order.shippingAddress?.lines?.length
+    ? [order.shippingName || order.shippingAddress.name, ...order.shippingAddress.lines].filter(Boolean)
+    : ["No shipping address returned by PayPal for this order."];
+
+  return [
+    "TRIPPINTHECURL RECEIPT",
+    "",
+    "Seller",
+    "TrippinTheCurl",
+    "Maurice C. Johnson III",
+    "Jacksonville, Florida, USA",
+    "",
+    "Order",
+    `Receipt Date: ${new Date().toLocaleString()}`,
+    `Order Date: ${new Date(order.createdAt).toLocaleString()}`,
+    `PayPal Order ID: ${order.paypalOrderId}`,
+    `PayPal Capture ID: ${order.paypalCaptureId || "Pending"}`,
+    `Status: ${order.status}`,
+    `Mode: ${order.mode}${order.mock ? " (Mock)" : ""}`,
+    "",
+    "Buyer",
+    `Name: ${order.payerName || "Not returned"}`,
+    `Email: ${order.payerEmail || "Not returned"}`,
+    "",
+    "Artwork",
+    `Title: ${order.artworkTitle || "Artwork order"}`,
+    `Image: ${order.artworkImage || "Not recorded"}`,
+    "",
+    "Payment",
+    `Amount: ${formatCurrency(Number(order.amount ?? 0))}`,
+    `Currency: ${order.currency || "USD"}`,
+    "",
+    "Shipping",
+    ...shippingLines,
+    "",
+    "Thank you for your purchase from TrippinTheCurl.",
+  ].join("\n");
+}
+
+function downloadReceipt(order: AdminOrder) {
+  const blob = new Blob([receiptText(order)], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${safeFilename(order.artworkTitle || order.paypalOrderId)}-${safeFilename(order.paypalOrderId)}-receipt.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function cleanArtworkText(value: string) {
@@ -133,11 +310,34 @@ function artworkDetail(item: ImageItem) {
   };
 }
 
+function portfolioSequence(item: ImageItem, fallback: number) {
+  const sequence = Number(item.sequence);
+  return Number.isFinite(sequence) ? sequence : fallback + 1;
+}
+
+function sortPortfolioItems(items: ImageItem[]) {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((left, right) => {
+      const sequenceDifference = portfolioSequence(left.item, left.index) - portfolioSequence(right.item, right.index);
+      if (sequenceDifference !== 0) return sequenceDifference;
+      return left.index - right.index;
+    })
+    .map(({ item }) => item);
+}
+
+function artworkDisplayTitle(item: ImageItem) {
+  return `${item.title}${item.commissioned ? " - Commissioned" : ""}${item.sold ? " - SOLD" : ""}${item.gift ? " - Gift" : ""}`;
+}
+
 function App() {
   const [content, setContent] = useState<Content | null>(null);
   const [paypalConfig, setPayPalConfig] = useState<PayPalConfig | null>(null);
   const [path, setPath] = useState(window.location.pathname);
   const [loadError, setLoadError] = useState("");
+  const routeMeta = metadataForPath(path);
+
+  useDocumentMeta(routeMeta);
 
   useEffect(() => {
     Promise.all([fetchJson<Content>("/api/content"), fetchJson<PayPalConfig>("/api/paypal/config")])
@@ -161,10 +361,6 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  useEffect(() => {
-    document.title = `${routeTitles[path] ?? "TrippinTheCurl"} | TrippinTheCurl`;
-  }, [path]);
-
   if (loadError) {
     return <ShellError message={loadError} />;
   }
@@ -181,7 +377,7 @@ function App() {
         {path === "/hireme" ? <HireMePage content={content} /> : null}
         {path === "/contact" ? <ContactPage content={content} /> : null}
         {path === "/about" ? <AboutPage content={content} /> : null}
-        {path === "/portfolio" ? <PortfolioPage content={content} paypalConfig={paypalConfig} /> : null}
+        {path === "/portfolio" ? <PortfolioPage content={content} paypalConfig={paypalConfig} onContentUpdated={setContent} /> : null}
         {path === "/publications" ? <PublicationsPage content={content} /> : null}
         {path === "/domains" ? <DomainsPage content={content} /> : null}
         {path === "/new-projects" ? <ProjectsPage content={content} /> : null}
@@ -191,6 +387,52 @@ function App() {
       <SiteFooter content={content} />
     </div>
   );
+}
+
+function useDocumentMeta(meta: RouteMeta) {
+  useEffect(() => {
+    document.title = meta.title;
+    setMeta("description", meta.description);
+    setMeta("robots", meta.robots);
+    setMeta("twitter:title", meta.title);
+    setMeta("twitter:description", meta.description);
+    setMeta("twitter:image", meta.image ?? DEFAULT_SOCIAL_IMAGE);
+    setProperty("og:title", meta.title);
+    setProperty("og:description", meta.description);
+    setProperty("og:url", meta.canonical);
+    setProperty("og:image", meta.image ?? DEFAULT_SOCIAL_IMAGE);
+    setCanonical(meta.canonical);
+  }, [meta]);
+}
+
+function setMeta(name: string, content: string) {
+  let tag = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+  if (!tag) {
+    tag = document.createElement("meta");
+    tag.name = name;
+    document.head.appendChild(tag);
+  }
+  tag.content = content;
+}
+
+function setProperty(property: string, content: string) {
+  let tag = document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`);
+  if (!tag) {
+    tag = document.createElement("meta");
+    tag.setAttribute("property", property);
+    document.head.appendChild(tag);
+  }
+  tag.content = content;
+}
+
+function setCanonical(href: string) {
+  let tag = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!tag) {
+    tag = document.createElement("link");
+    tag.rel = "canonical";
+    document.head.appendChild(tag);
+  }
+  tag.href = href;
 }
 
 function ShellError({ message }: { message: string }) {
@@ -597,13 +839,24 @@ function AboutPage({ content }: { content: Content }) {
   );
 }
 
-function PortfolioPage({ content, paypalConfig }: { content: Content; paypalConfig: PayPalConfig }) {
+type PayPalCaptureResult = {
+  status: string;
+  mock?: boolean;
+  artworkSold?: boolean;
+  artwork?: { title: string; image: string } | null;
+  order?: AdminOrder;
+};
+
+function PortfolioPage({ content, paypalConfig, onContentUpdated }: { content: Content; paypalConfig: PayPalConfig; onContentUpdated: (content: Content) => void }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [zoom, setZoom] = useState(1);
   const [paymentStatus, setPaymentStatus] = useState("");
   const [isPaying, setIsPaying] = useState(false);
-  const selected = selectedIndex === null ? null : content.portfolio[selectedIndex];
+  const [capturedReturnOrder, setCapturedReturnOrder] = useState("");
+  const sortedPortfolio = useMemo(() => sortPortfolioItems(content.portfolio), [content.portfolio]);
+  const selected = selectedIndex === null ? null : sortedPortfolio[selectedIndex];
   const selectedDetail = selected ? artworkDetail(selected) : null;
+  const selectedIsForSale = Boolean(selected?.available && Number(selected.price ?? 0) > 0);
 
   function openArtwork(index: number) {
     setSelectedIndex(index);
@@ -622,7 +875,7 @@ function PortfolioPage({ content, paypalConfig }: { content: Content; paypalConf
       if (current === null) return current;
       setZoom(1);
       setPaymentStatus("");
-      return (current + offset + content.portfolio.length) % content.portfolio.length;
+      return (current + offset + sortedPortfolio.length) % sortedPortfolio.length;
     });
   }
 
@@ -630,27 +883,66 @@ function PortfolioPage({ content, paypalConfig }: { content: Content; paypalConf
     setIsPaying(true);
     setPaymentStatus("");
     try {
+      const returnUrl = `${window.location.origin}/portfolio?paypalOrder=approved`;
+      const cancelUrl = `${window.location.origin}/portfolio?paypalOrder=cancelled`;
       const order = await fetchJson<{ id: string; status: string; links?: { href: string; rel: string }[] }>("/api/paypal/create-order", {
         method: "POST",
-        body: JSON.stringify({ amount: Number(item.price ?? 0), artworkImage: item.image, label: `Artwork: ${item.title}` }),
+        body: JSON.stringify({ amount: Number(item.price ?? 0), artworkImage: item.image, label: `Artwork: ${item.title}`, returnUrl, cancelUrl }),
       });
       const approvalLink = order.links?.find((link) => link.rel === "approve")?.href;
       if (approvalLink) {
-        window.open(approvalLink, "_blank", "noopener,noreferrer");
-        setPaymentStatus("PayPal checkout opened in a new tab.");
+        window.location.assign(approvalLink);
         return;
       }
-      const capture = await fetchJson<{ status: string; mock?: boolean }>("/api/paypal/capture-order", {
+      const capture = await fetchJson<PayPalCaptureResult>("/api/paypal/capture-order", {
         method: "POST",
         body: JSON.stringify({ orderId: order.id }),
       });
-      setPaymentStatus(capture.mock ? "Mock artwork payment completed locally." : `Artwork payment ${capture.status.toLowerCase()}.`);
+      setPaymentStatus(capture.artworkSold ? "Artwork payment completed. Artwork has been marked SOLD." : capture.mock ? "Mock artwork payment completed locally." : `Artwork payment ${capture.status.toLowerCase()}.`);
+      if (capture.artworkSold) {
+        onContentUpdated(await fetchJson<Content>("/api/content"));
+      }
     } catch (error) {
       setPaymentStatus(error instanceof Error ? error.message : "Artwork payment failed.");
     } finally {
       setIsPaying(false);
     }
   }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paypalOrder = params.get("paypalOrder");
+    const token = params.get("token");
+
+    if (paypalOrder === "cancelled") {
+      setPaymentStatus("PayPal checkout was cancelled.");
+      window.history.replaceState({}, "", "/portfolio");
+      return;
+    }
+
+    if (paypalOrder !== "approved" || !token || capturedReturnOrder === token) {
+      return;
+    }
+
+    setCapturedReturnOrder(token);
+    setIsPaying(true);
+    setPaymentStatus("Completing PayPal payment...");
+    fetchJson<PayPalCaptureResult>("/api/paypal/capture-order", {
+      method: "POST",
+      body: JSON.stringify({ orderId: token }),
+    })
+      .then(async (capture) => {
+        setPaymentStatus(capture.artworkSold ? "Artwork payment completed. Artwork has been marked SOLD." : capture.mock ? "Mock artwork payment completed locally." : `Artwork payment ${capture.status.toLowerCase()}.`);
+        if (capture.artworkSold) {
+          onContentUpdated(await fetchJson<Content>("/api/content"));
+        }
+        window.history.replaceState({}, "", "/portfolio");
+      })
+      .catch((error) => {
+        setPaymentStatus(error instanceof Error ? error.message : "Artwork payment failed.");
+      })
+      .finally(() => setIsPaying(false));
+  }, [capturedReturnOrder, onContentUpdated]);
 
   useEffect(() => {
     if (selectedIndex === null) return undefined;
@@ -663,15 +955,16 @@ function PortfolioPage({ content, paypalConfig }: { content: Content; paypalConf
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIndex, content.portfolio.length]);
+  }, [selectedIndex, sortedPortfolio.length]);
 
   return (
     <PageFrame eyebrow="Original works" title="Portfolio">
+      {paymentStatus ? <p className="mb-6 border border-[#052434]/15 bg-[#bef1fe] p-3 text-sm font-semibold text-[#052434]">{paymentStatus}</p> : null}
       <section className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
-        {content.portfolio.map((item, index) => (
+        {sortedPortfolio.map((item, index) => (
           <button className="mb-4 block w-full break-inside-avoid bg-gallery text-left shadow-fine transition hover:-translate-y-0.5 hover:shadow-lg" key={item.image} onClick={() => openArtwork(index)} type="button">
             <img className="h-auto w-full object-contain" src={item.image} alt={item.title} />
-            <span className="block bg-[#4687a8] px-3 py-3 text-sm font-bold uppercase tracking-[0.14em] text-[#bef1fe]">{item.title}</span>
+            <span className="block bg-[#4687a8] px-3 py-3 text-sm font-bold uppercase tracking-[0.14em] text-[#bef1fe]">{artworkDisplayTitle(item)}</span>
           </button>
         ))}
       </section>
@@ -702,12 +995,14 @@ function PortfolioPage({ content, paypalConfig }: { content: Content; paypalConf
               <header className="mb-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#052434]">{selectedDetail.material}</p>
-                  <h2 className="mt-2 font-serif text-4xl font-semibold leading-none text-[#052434] sm:text-5xl">{selected.title}</h2>
-                  <p className="mt-3 text-sm leading-6 text-graphite">
-                    PayPal mode: {paypalConfig.mode}. {paypalConfig.serverVerified ? "Secure checkout uses configured PayPal credentials." : "Local mock checkout is enabled until PayPal credentials are configured."}
-                  </p>
+                  <h2 className="mt-2 font-serif text-2xl font-semibold leading-none text-[#052434] sm:text-3xl">{artworkDisplayTitle(selected)}</h2>
+                  {selectedIsForSale && paypalConfig.mode === "sandbox" ? (
+                    <p className="mt-3 text-sm leading-6 text-graphite">
+                      PayPal mode: {paypalConfig.mode}. {paypalConfig.serverVerified ? "Secure checkout uses configured PayPal credentials." : "Local mock checkout is enabled until PayPal credentials are configured."}
+                    </p>
+                  ) : null}
                 </div>
-                {selected.available && Number(selected.price ?? 0) > 0 ? (
+                {selectedIsForSale ? (
                   <div className="grid gap-3 sm:grid-cols-[auto_auto] sm:items-center lg:justify-end">
                     <div className="sm:text-right">
                       <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#052434]">Available for sale</p>
@@ -723,32 +1018,21 @@ function PortfolioPage({ content, paypalConfig }: { content: Content; paypalConf
 
               {paymentStatus ? <p className="mb-4 border border-[#052434]/15 bg-[#bef1fe] p-3 text-sm font-semibold text-[#052434]">{paymentStatus}</p> : null}
 
-              <div className="artwork-detail-flow text-[#244f61]">
+              <div className="artwork-detail-flow text-graphite">
                 <img
                   className="artwork-detail-image transition-transform duration-200"
                   src={selected.image}
                   alt={selected.title}
                   style={{ transform: `scale(${zoom})` }}
                 />
-                <p className="whitespace-pre-line font-serif text-[22px] leading-8">{selectedDetail.body}</p>
+                <p className="whitespace-pre-line leading-7">{selectedDetail.body}</p>
+                <p className="clear-both pt-7 leading-7">
+                  <strong>Material:</strong> {selectedDetail.material}
+                  {selectedDetail.dimensions ? <> | <strong>Dimensions:</strong> {selectedDetail.dimensions}</> : null}
+                  {" | "}
+                  <strong>Artwork:</strong> {(selectedIndex ?? 0) + 1} of {sortedPortfolio.length}
+                </p>
               </div>
-
-              <dl className="clear-both mt-8 flex flex-wrap gap-x-5 gap-y-2 border-t border-[#052434]/15 pt-5 text-[20px] leading-8 text-[#244f61]">
-                <div className="flex gap-2">
-                  <dt className="font-bold">Material:</dt>
-                  <dd>{selectedDetail.material}</dd>
-                </div>
-                {selectedDetail.dimensions ? (
-                  <div className="flex gap-2">
-                    <dt className="font-bold">Dimensions:</dt>
-                    <dd>{selectedDetail.dimensions}</dd>
-                  </div>
-                ) : null}
-                <div className="flex gap-2">
-                  <dt className="font-bold">Artwork:</dt>
-                  <dd>{(selectedIndex ?? 0) + 1} of {content.portfolio.length}</dd>
-                </div>
-              </dl>
             </article>
           </div>
         </div>
@@ -935,13 +1219,19 @@ function AdminPage({
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [refreshingPortfolio, setRefreshingPortfolio] = useState(false);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [refreshingOrders, setRefreshingOrders] = useState(false);
 
   useEffect(() => {
     fetchJson<{ authenticated: boolean }>("/api/admin/session")
       .then((session) => {
         setAuthenticated(session.authenticated);
         if (session.authenticated) {
-          return fetchJson<Content>("/api/admin/content").then(setDraft);
+          return Promise.all([fetchJson<Content>("/api/admin/content"), fetchJson<AdminOrder[]>("/api/admin/orders")]).then(([adminContent, adminOrders]) => {
+            setDraft(adminContent);
+            setOrders(adminOrders);
+          });
         }
         return undefined;
       })
@@ -953,8 +1243,9 @@ function AdminPage({
     setStatus("");
     try {
       await fetchJson("/api/admin/login", { method: "POST", body: JSON.stringify({ password }) });
-      const adminContent = await fetchJson<Content>("/api/admin/content");
+      const [adminContent, adminOrders] = await Promise.all([fetchJson<Content>("/api/admin/content"), fetchJson<AdminOrder[]>("/api/admin/orders")]);
       setDraft(adminContent);
+      setOrders(adminOrders);
       setAuthenticated(true);
       setPassword("");
       setStatus("Signed in.");
@@ -966,6 +1257,7 @@ function AdminPage({
   async function logout() {
     await fetchJson("/api/admin/logout", { method: "POST" });
     setAuthenticated(false);
+    setOrders([]);
     setStatus("");
   }
 
@@ -996,7 +1288,6 @@ function AdminPage({
     setDraft((value) => ({
       ...value,
       portfolio: [
-        ...value.portfolio,
         {
           title: "New Artwork",
           medium: "Original artwork",
@@ -1004,8 +1295,13 @@ function AdminPage({
           description: "",
           price: 0,
           available: false,
+          commissioned: false,
+          sold: false,
+          gift: false,
+          sequence: 1,
         },
-      ],
+        ...value.portfolio,
+      ].map((item, index) => index === 0 ? item : { ...item, sequence: portfolioSequence(item, index - 1) + 1 }),
     }));
   }
 
@@ -1026,6 +1322,47 @@ function AdminPage({
       setError(refreshError instanceof Error ? refreshError.message : "Portfolio refresh failed.");
     } finally {
       setRefreshingPortfolio(false);
+    }
+  }
+
+  async function refreshOrders() {
+    setRefreshingOrders(true);
+    setStatus("");
+    setError("");
+    try {
+      const nextOrders = await fetchJson<AdminOrder[]>("/api/admin/orders");
+      setOrders(nextOrders);
+      setSelectedOrderIds((ids) => ids.filter((id) => nextOrders.some((order) => order.paypalOrderId === id)));
+      setStatus("Order history refreshed.");
+    } catch (orderError) {
+      setError(orderError instanceof Error ? orderError.message : "Order refresh failed.");
+    } finally {
+      setRefreshingOrders(false);
+    }
+  }
+
+  function toggleOrderSelection(orderId: string, selected: boolean) {
+    setSelectedOrderIds((ids) => selected ? Array.from(new Set([...ids, orderId])) : ids.filter((id) => id !== orderId));
+  }
+
+  async function clearSelectedOrders() {
+    setStatus("");
+    setError("");
+    if (!selectedOrderIds.length) {
+      setError("Select at least one order to clear.");
+      return;
+    }
+
+    try {
+      const result = await fetchJson<{ deleted: number; orders: AdminOrder[] }>("/api/admin/orders", {
+        method: "DELETE",
+        body: JSON.stringify({ orderIds: selectedOrderIds }),
+      });
+      setOrders(result.orders);
+      setSelectedOrderIds([]);
+      setStatus(`${result.deleted} order${result.deleted === 1 ? "" : "s"} cleared.`);
+    } catch (clearError) {
+      setError(clearError instanceof Error ? clearError.message : "Clear orders failed.");
     }
   }
 
@@ -1116,17 +1453,30 @@ function AdminPage({
               <article className="grid gap-4 border border-ink/10 p-4 lg:grid-cols-[160px_1fr]" key={`${item.title}-${index}`}>
                 <img className="aspect-square w-full object-cover" src={item.image || "/"} alt={item.title || "Artwork preview"} />
                 <div className="grid gap-3">
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid gap-3 md:grid-cols-[1fr_1fr_140px]">
                     <AdminInput label="Title" value={item.title} onChange={(value) => updatePortfolio(index, { title: value })} />
                     <AdminInput label="Medium" value={item.medium ?? ""} onChange={(value) => updatePortfolio(index, { medium: value })} />
+                    <AdminInput label="Sequence" type="number" value={String(portfolioSequence(item, index))} onChange={(value) => updatePortfolio(index, { sequence: Number(value) })} />
                   </div>
                   <AdminInput label="Image URL" value={item.image} onChange={(value) => updatePortfolio(index, { image: value })} />
                   <AdminTextarea label="Description" value={item.description ?? ""} onChange={(value) => updatePortfolio(index, { description: value })} />
-                  <div className="grid items-end gap-3 md:grid-cols-[220px_minmax(220px,1fr)_140px]">
+                  <div className="grid items-end gap-3 md:grid-cols-[220px_minmax(160px,1fr)_minmax(150px,1fr)_minmax(120px,1fr)_minmax(100px,1fr)_140px]">
                     <AdminPriceInput value={Number(item.price ?? 0)} onChange={(value) => updatePortfolio(index, { price: value })} />
                     <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
                       <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.available)} onChange={(event) => updatePortfolio(index, { available: event.target.checked })} />
                       Available for sale
+                    </label>
+                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
+                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.commissioned)} onChange={(event) => updatePortfolio(index, { commissioned: event.target.checked })} />
+                      Commissioned
+                    </label>
+                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
+                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.sold)} onChange={(event) => updatePortfolio(index, { sold: event.target.checked })} />
+                      Sold
+                    </label>
+                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
+                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.gift)} onChange={(event) => updatePortfolio(index, { gift: event.target.checked })} />
+                      Gift
                     </label>
                     <button className="button-secondary self-end" onClick={() => removePortfolioItem(index)} type="button">
                       <Trash2 size={17} />
@@ -1165,6 +1515,78 @@ function AdminPage({
               ))}
             </div>
           </div>
+        </section>
+
+        <section className="bg-gallery p-5 shadow-fine">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="font-serif text-3xl font-semibold">Order Tracking</h2>
+              <p className="mt-1 text-sm text-graphite">Short-term PayPal order history for completed artwork purchases.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button className="button-secondary" disabled={!selectedOrderIds.length} onClick={clearSelectedOrders} type="button">
+                <Trash2 size={17} />
+                Clear Orders
+              </button>
+              <button className="button-secondary" disabled={refreshingOrders} onClick={refreshOrders} type="button">
+                <Sparkles size={17} />
+                {refreshingOrders ? "Refreshing" : "Refresh Orders"}
+              </button>
+            </div>
+          </div>
+          {orders.length ? (
+            <div className="grid gap-4">
+              {orders.map((order) => (
+                <article className="grid gap-4 border border-ink/10 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]" key={order.paypalOrderId}>
+                  <div>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-clay">
+                          <input
+                            className="size-4 accent-[#052434]"
+                            type="checkbox"
+                            checked={selectedOrderIds.includes(order.paypalOrderId)}
+                            onChange={(event) => toggleOrderSelection(order.paypalOrderId, event.target.checked)}
+                          />
+                          Select
+                        </label>
+                        <h3 className="font-serif text-2xl font-semibold text-[#052434]">{order.artworkTitle || "Artwork order"}</h3>
+                        <span className="bg-[#99d5e4] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[#052434]">{order.status}</span>
+                        {order.mock ? <span className="bg-[#bef1fe] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[#052434]">Mock</span> : null}
+                      </div>
+                      <button className="button-secondary" onClick={() => downloadReceipt(order)} type="button">
+                        <FileText size={17} />
+                        Receipt
+                      </button>
+                    </div>
+                    <div className="mt-3 grid gap-2 text-sm leading-6 text-graphite sm:grid-cols-2">
+                      <ConfigLine label="Order ID" value={order.paypalOrderId} />
+                      <ConfigLine label="Capture ID" value={order.paypalCaptureId || "Pending"} />
+                      <ConfigLine label="Amount" value={formatCurrency(Number(order.amount ?? 0))} />
+                      <ConfigLine label="Mode" value={order.mode} />
+                      <ConfigLine label="Buyer" value={order.payerName || "Not returned"} />
+                      <ConfigLine label="Email" value={order.payerEmail || "Not returned"} />
+                      <ConfigLine label="Created" value={new Date(order.createdAt).toLocaleString()} />
+                      <ConfigLine label="Updated" value={new Date(order.updatedAt).toLocaleString()} />
+                    </div>
+                  </div>
+                  <div className="border border-ink/10 bg-white p-4 text-sm leading-6 text-graphite">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-clay">Shipping</p>
+                    {order.shippingAddress?.lines?.length ? (
+                      <div className="mt-2">
+                        <p className="font-semibold text-ink">{order.shippingName || order.shippingAddress.name}</p>
+                        {order.shippingAddress.lines.map((line) => <p key={line}>{line}</p>)}
+                      </div>
+                    ) : (
+                      <p className="mt-2">No shipping address returned by PayPal for this order.</p>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="border border-ink/10 bg-white p-4 text-sm leading-6 text-graphite">No completed artwork orders have been recorded yet.</p>
+          )}
         </section>
       </div>
     </PageFrame>

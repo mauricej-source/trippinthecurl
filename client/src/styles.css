@@ -90,13 +90,13 @@ img {
   }
 
   .artwork-detail-image {
-    @apply mb-5 w-full bg-transparent object-contain shadow-fine;
+    @apply mb-5 w-full bg-transparent object-contain;
   }
 
   @screen lg {
     .artwork-detail-image {
       float: left;
-      width: min(64%, 980px);
+      width: min(52%, 760px);
       max-height: calc(100vh - 15rem);
       margin-right: 2rem;
       object-fit: contain;

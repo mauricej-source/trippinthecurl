@@ -1,0 +1,34 @@
+TRIPPINTHECURL RECEIPT
+
+Seller
+TrippinTheCurl
+Maurice C. Johnson III
+Jacksonville, Florida, USA
+
+Order
+Receipt Date: 5/27/2026, 11:24:28 PM
+Order Date: 5/27/2026, 11:03:34 PM
+PayPal Order ID: 7KP58395PM760210V
+PayPal Capture ID: 99V10333TH463493U
+Status: COMPLETED
+Mode: sandbox
+
+Buyer
+Name: Maurice Johnson
+Email: mauricejohnson3@protonmail.com
+
+Artwork
+Title: Early Morning Yesterday
+Image: /images/portfolio/Early Morning Yesterday.jpg
+
+Payment
+Amount: $10.00
+Currency: USD
+
+Shipping
+Maurice Johnson
+763 Silver Cloud Circle Apartment 203
+Lake Mary, FL, 32746-1525
+US
+
+Thank you for your purchase from TrippinTheCurl.
