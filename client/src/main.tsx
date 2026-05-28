@@ -372,7 +372,7 @@ function App() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <NavBar navigation={content.navigation} currentPath={path} onNavigate={navigate} />
-      <main style={path === "/hireme" || path === "/about" || path === "/domains" || path === "/new-projects" ? { background: "linear-gradient(135deg, #11374c, #467f9f, #88bfde, #b7f2fe)" } : undefined}>
+      <main style={path === "/hireme" || path === "/about" || path === "/domains" || path === "/new-projects" || path === "/admin" ? { background: "linear-gradient(135deg, #11374c, #467f9f, #88bfde, #b7f2fe)" } : undefined}>
         {path === "/" ? <HomePage content={content} onNavigate={navigate} /> : null}
         {path === "/hireme" ? <HireMePage content={content} /> : null}
         {path === "/contact" ? <ContactPage content={content} /> : null}
@@ -544,7 +544,7 @@ function NavBar({ navigation, currentPath, onNavigate }: { navigation: NavItem[]
 
 function PageFrame({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) {
   const isHireMe = eyebrow === "Professional profile";
-  const isGradientPage = isHireMe || eyebrow === "Artist statement" || eyebrow === "Built domains" || eyebrow === "Works in progress";
+  const isGradientPage = isHireMe || eyebrow === "Artist statement" || eyebrow === "Built domains" || eyebrow === "Works in progress" || eyebrow === "Private console";
   const isWidePage = eyebrow === "Original works";
   const usesStencilHeader = isGradientPage || isWidePage;
 
