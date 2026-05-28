@@ -30,6 +30,63 @@ img {
   background: #eee7dc;
 }
 
+.trippin-spinner {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  animation: trippin-spinner-spin 1.15s linear infinite;
+}
+
+.trippin-spinner span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 72px;
+  border-radius: 22px 22px 28px 28px;
+  background: linear-gradient(180deg, #bef1fe 0%, #88bfde 62%, #4687a8 100%);
+  box-shadow: inset -7px -8px 14px rgb(5 36 52 / 0.12), 0 7px 15px rgb(5 36 52 / 0.14);
+  opacity: 0.96;
+  transform-origin: 50% 8px;
+}
+
+.trippin-spinner span:nth-child(1) {
+  transform: translate(-50%, -12px) rotate(0deg);
+}
+
+.trippin-spinner span:nth-child(2) {
+  transform: translate(-50%, -12px) rotate(120deg);
+}
+
+.trippin-spinner span:nth-child(3) {
+  transform: translate(-50%, -12px) rotate(240deg);
+}
+
+.trippin-spinner i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38px;
+  height: 38px;
+  border: 7px solid #f8f5ee;
+  border-radius: 9999px;
+  background: #052434;
+  box-shadow: 0 0 0 2px rgb(5 36 52 / 0.08), 0 8px 18px rgb(5 36 52 / 0.18);
+  transform: translate(-50%, -50%);
+}
+
+@keyframes trippin-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trippin-spinner {
+    animation-duration: 2.5s;
+  }
+}
+
 @layer components {
   .button-primary {
     @apply inline-flex min-h-11 items-center justify-center gap-2 bg-ink px-5 py-3 text-sm font-bold uppercase tracking-[0.14em] text-paper transition hover:bg-clay;
@@ -45,18 +102,6 @@ img {
 
   .social-link {
     @apply border border-ink/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-graphite transition hover:border-[#bef1fe] hover:bg-[#bef1fe] hover:text-ink;
-  }
-
-  .payment-button {
-    @apply flex w-full items-center justify-between gap-4 border border-paper/15 bg-paper/[0.08] p-3 text-left text-paper transition hover:bg-paper/15 disabled:cursor-wait disabled:opacity-60;
-  }
-
-  .payment-button strong {
-    @apply block text-sm;
-  }
-
-  .payment-button small {
-    @apply mt-1 block text-xs leading-5 text-paper/[0.68];
   }
 
   .art-tile {

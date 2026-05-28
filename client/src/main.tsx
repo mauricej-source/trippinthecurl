@@ -362,11 +362,11 @@ function App() {
   }
 
   if (loadError) {
-    return <ShellError message={loadError} />;
+    return <ShellStatus message={loadError} />;
   }
 
   if (!content || !paypalConfig) {
-    return <ShellError message="Loading TrippinTheCurl..." />;
+    return <ShellStatus message="Loading TrippinTheCurl..." loading />;
   }
 
   return (
@@ -435,10 +435,18 @@ function setCanonical(href: string) {
   tag.href = href;
 }
 
-function ShellError({ message }: { message: string }) {
+function ShellStatus({ message, loading = false }: { message: string; loading?: boolean }) {
   return (
     <div className="grid min-h-screen place-items-center bg-paper px-6 text-ink">
       <div className="max-w-md border border-ink/10 bg-gallery p-6 text-center shadow-fine">
+        {loading ? (
+          <div className="trippin-spinner mx-auto mb-5" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <i />
+          </div>
+        ) : null}
         <p className="font-serif text-2xl">{message}</p>
       </div>
     </div>
@@ -722,61 +730,6 @@ function ResumeSection({ title, children }: { title: string; children: React.Rea
     <section className="mb-7 grid gap-3">
       <h3 className="text-[16px] font-bold uppercase tracking-[0.2em] text-[#052434]">{title}</h3>
       <div className="grid gap-3 leading-7 text-graphite">{children}</div>
-    </section>
-  );
-}
-
-function PaymentPanel({ items, paypalConfig }: { items: Content["commerce"]["items"]; paypalConfig: PayPalConfig }) {
-  const [status, setStatus] = useState("");
-  const [busyId, setBusyId] = useState("");
-
-  async function startPayment(item: Content["commerce"]["items"][number]) {
-    setBusyId(item.id);
-    setStatus("");
-    try {
-      const order = await fetchJson<{ id: string; status: string; links?: { href: string; rel: string }[] }>("/api/paypal/create-order", {
-        method: "POST",
-        body: JSON.stringify({ amount: item.amount, label: item.label }),
-      });
-      const approvalLink = order.links?.find((link) => link.rel === "approve")?.href;
-      if (approvalLink) {
-        window.open(approvalLink, "_blank", "noopener,noreferrer");
-        setStatus("PayPal approval opened in a new tab. Capture runs after buyer approval in the full checkout flow.");
-        return;
-      }
-      const capture = await fetchJson<{ status: string; mock?: boolean }>("/api/paypal/capture-order", {
-        method: "POST",
-        body: JSON.stringify({ orderId: order.id }),
-      });
-      setStatus(capture.mock ? "Mock payment completed locally." : `Payment ${capture.status.toLowerCase()}.`);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Payment failed.");
-    } finally {
-      setBusyId("");
-    }
-  }
-
-  return (
-    <section className="bg-ink p-5 text-paper shadow-fine">
-      <div className="mb-4 flex items-center gap-3">
-        <ShoppingBag size={18} />
-        <h2 className="font-serif text-2xl font-semibold">Start a Conversation</h2>
-      </div>
-      <p className="mb-4 text-sm leading-6 text-paper/75">
-        PayPal mode: {paypalConfig.mode}. {paypalConfig.serverVerified ? "Server credentials configured." : "Using local mock flow until PayPal credentials are set."}
-      </p>
-      <div className="grid gap-3">
-        {items.map((item) => (
-          <button className="payment-button" disabled={Boolean(busyId)} key={item.id} onClick={() => startPayment(item)} type="button">
-            <span>
-              <strong>{item.label}</strong>
-              <small>{item.description}</small>
-            </span>
-            <span>${item.amount}</span>
-          </button>
-        ))}
-      </div>
-      {status ? <p className="mt-4 text-sm text-paper/85">{status}</p> : null}
     </section>
   );
 }
@@ -1366,16 +1319,6 @@ function AdminPage({
     }
   }
 
-  function updateCommerce(index: number, patch: Partial<Content["commerce"]["items"][number]>) {
-    setDraft((value) => ({
-      ...value,
-      commerce: {
-        ...value.commerce,
-        items: value.commerce.items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item),
-      },
-    }));
-  }
-
   if (!authenticated) {
     return (
       <section className="grid min-h-[calc(100vh-74px)] place-items-center bg-[#052434] px-4 py-12 text-paper">
@@ -1431,92 +1374,6 @@ function AdminPage({
       {error ? <p className="mb-4 border border-red-700/20 bg-red-50 p-3 text-sm font-semibold text-red-800">{error}</p> : null}
 
       <div className="grid gap-8">
-        <section className="bg-gallery p-5 shadow-fine">
-          <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-              <h2 className="font-serif text-3xl font-semibold">Artwork Sales</h2>
-              <p className="mt-1 text-sm text-graphite">Describe images, set prices, and mark pieces available for sale.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button className="button-secondary" disabled={refreshingPortfolio} onClick={refreshPortfolio} type="button">
-                <Sparkles size={17} />
-                {refreshingPortfolio ? "Refreshing" : "Refresh Portfolio"}
-              </button>
-              <button className="button-secondary" onClick={addPortfolioItem} type="button">
-                <Plus size={17} />
-                Add
-              </button>
-            </div>
-          </div>
-          <div className="grid gap-5">
-            {draft.portfolio.map((item, index) => (
-              <article className="grid gap-4 border border-ink/10 p-4 lg:grid-cols-[160px_1fr]" key={`${item.title}-${index}`}>
-                <img className="aspect-square w-full object-cover" src={item.image || "/"} alt={item.title || "Artwork preview"} />
-                <div className="grid gap-3">
-                  <div className="grid gap-3 md:grid-cols-[1fr_1fr_140px]">
-                    <AdminInput label="Title" value={item.title} onChange={(value) => updatePortfolio(index, { title: value })} />
-                    <AdminInput label="Medium" value={item.medium ?? ""} onChange={(value) => updatePortfolio(index, { medium: value })} />
-                    <AdminInput label="Sequence" type="number" value={String(portfolioSequence(item, index))} onChange={(value) => updatePortfolio(index, { sequence: Number(value) })} />
-                  </div>
-                  <AdminInput label="Image URL" value={item.image} onChange={(value) => updatePortfolio(index, { image: value })} />
-                  <AdminTextarea label="Description" value={item.description ?? ""} onChange={(value) => updatePortfolio(index, { description: value })} />
-                  <div className="grid items-end gap-3 md:grid-cols-[220px_minmax(160px,1fr)_minmax(150px,1fr)_minmax(120px,1fr)_minmax(100px,1fr)_140px]">
-                    <AdminPriceInput value={Number(item.price ?? 0)} onChange={(value) => updatePortfolio(index, { price: value })} />
-                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
-                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.available)} onChange={(event) => updatePortfolio(index, { available: event.target.checked })} />
-                      Available for sale
-                    </label>
-                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
-                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.commissioned)} onChange={(event) => updatePortfolio(index, { commissioned: event.target.checked })} />
-                      Commissioned
-                    </label>
-                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
-                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.sold)} onChange={(event) => updatePortfolio(index, { sold: event.target.checked })} />
-                      Sold
-                    </label>
-                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
-                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.gift)} onChange={(event) => updatePortfolio(index, { gift: event.target.checked })} />
-                      Gift
-                    </label>
-                    <button className="button-secondary self-end" onClick={() => removePortfolioItem(index)} type="button">
-                      <Trash2 size={17} />
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-2">
-          <div className="bg-gallery p-5 shadow-fine">
-            <h2 className="font-serif text-3xl font-semibold">PayPal Administration</h2>
-            <div className="mt-4 grid gap-3 text-sm text-graphite">
-              <ConfigLine label="Mode" value={paypalConfig.mode} />
-              <ConfigLine label="Client ID" value={paypalConfig.clientId ? "Configured" : "Missing"} />
-              <ConfigLine label="Server credentials" value={paypalConfig.serverVerified ? "Configured" : "Missing"} />
-              <ConfigLine label="Local mock payments" value={paypalConfig.devMockPayments ? "Enabled" : "Disabled"} />
-            </div>
-            <p className="mt-4 text-sm leading-6 text-graphite">
-              Secret PayPal values stay in environment variables. This panel manages public readiness and site-level payment offers.
-            </p>
-          </div>
-          <div className="bg-gallery p-5 shadow-fine">
-            <h2 className="font-serif text-3xl font-semibold">Payment Offers</h2>
-            <div className="mt-4 grid gap-4">
-              {draft.commerce.items.map((item, index) => (
-                <div className="grid gap-3 border border-ink/10 p-3" key={item.id}>
-                  <div className="grid gap-3 md:grid-cols-[1fr_120px]">
-                    <AdminInput label="Label" value={item.label} onChange={(value) => updateCommerce(index, { label: value })} />
-                    <AdminInput label="Amount" type="number" value={String(item.amount)} onChange={(value) => updateCommerce(index, { amount: Number(value) })} />
-                  </div>
-                  <AdminTextarea label="Description" value={item.description} onChange={(value) => updateCommerce(index, { description: value })} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         <section className="bg-gallery p-5 shadow-fine">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -1588,6 +1445,77 @@ function AdminPage({
             <p className="border border-ink/10 bg-white p-4 text-sm leading-6 text-graphite">No completed artwork orders have been recorded yet.</p>
           )}
         </section>
+
+        <section className="bg-gallery p-5 shadow-fine">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="font-serif text-3xl font-semibold">Artwork Sales</h2>
+              <p className="mt-1 text-sm text-graphite">Describe images, set prices, and mark pieces available for sale.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button className="button-secondary" disabled={refreshingPortfolio} onClick={refreshPortfolio} type="button">
+                <Sparkles size={17} />
+                {refreshingPortfolio ? "Refreshing" : "Refresh Portfolio"}
+              </button>
+              <button className="button-secondary" onClick={addPortfolioItem} type="button">
+                <Plus size={17} />
+                Add
+              </button>
+            </div>
+          </div>
+          <div className="grid gap-5">
+            {draft.portfolio.map((item, index) => (
+              <article className="grid gap-4 border border-ink/10 p-4 lg:grid-cols-[160px_1fr]" key={`${item.title}-${index}`}>
+                <img className="aspect-square w-full object-cover" src={item.image || "/"} alt={item.title || "Artwork preview"} />
+                <div className="grid gap-3">
+                  <div className="grid gap-3 md:grid-cols-[1fr_1fr_140px]">
+                    <AdminInput label="Title" value={item.title} onChange={(value) => updatePortfolio(index, { title: value })} />
+                    <AdminInput label="Medium" value={item.medium ?? ""} onChange={(value) => updatePortfolio(index, { medium: value })} />
+                    <AdminInput label="Sequence" type="number" value={String(portfolioSequence(item, index))} onChange={(value) => updatePortfolio(index, { sequence: Number(value) })} />
+                  </div>
+                  <AdminInput label="Image URL" value={item.image} onChange={(value) => updatePortfolio(index, { image: value })} />
+                  <AdminTextarea label="Description" value={item.description ?? ""} onChange={(value) => updatePortfolio(index, { description: value })} />
+                  <div className="grid items-end gap-3 md:grid-cols-[220px_minmax(160px,1fr)_minmax(150px,1fr)_minmax(120px,1fr)_minmax(100px,1fr)_140px]">
+                    <AdminPriceInput value={Number(item.price ?? 0)} onChange={(value) => updatePortfolio(index, { price: value })} />
+                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
+                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.available)} onChange={(event) => updatePortfolio(index, { available: event.target.checked })} />
+                      Available for sale
+                    </label>
+                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
+                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.commissioned)} onChange={(event) => updatePortfolio(index, { commissioned: event.target.checked })} />
+                      Commissioned
+                    </label>
+                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
+                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.sold)} onChange={(event) => updatePortfolio(index, { sold: event.target.checked })} />
+                      Sold
+                    </label>
+                    <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-graphite">
+                      <input className="size-4 accent-[#052434]" type="checkbox" checked={Boolean(item.gift)} onChange={(event) => updatePortfolio(index, { gift: event.target.checked })} />
+                      Gift
+                    </label>
+                    <button className="button-secondary self-end" onClick={() => removePortfolioItem(index)} type="button">
+                      <Trash2 size={17} />
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-gallery p-5 shadow-fine">
+          <h2 className="font-serif text-3xl font-semibold">PayPal Administration</h2>
+          <div className="mt-4 grid gap-3 text-sm text-graphite">
+            <ConfigLine label="Mode" value={paypalConfig.mode} />
+            <ConfigLine label="Client ID" value={paypalConfig.clientId ? "Configured" : "Missing"} />
+            <ConfigLine label="Server credentials" value={paypalConfig.serverVerified ? "Configured" : "Missing"} />
+            <ConfigLine label="Local mock payments" value={paypalConfig.devMockPayments ? "Enabled" : "Disabled"} />
+          </div>
+          <p className="mt-4 text-sm leading-6 text-graphite">
+            Secret PayPal values stay in environment variables. Artwork sale prices are managed in the Artwork Sales section.
+          </p>
+        </section>
+
       </div>
     </PageFrame>
   );
