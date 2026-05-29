@@ -587,7 +587,10 @@ function HomePage({ content, onNavigate }: { content: Content; onNavigate: (path
     <>
       <section className="relative min-h-[72vh] overflow-hidden bg-[#052434] sm:min-h-[calc(100vh-74px)]">
         {content.home.heroImage ? (
-          <img className="absolute inset-0 size-full object-cover object-center sm:object-cover" src={content.home.heroImage} alt="TrippinTheCurl wave" />
+          <>
+            <img className="absolute inset-0 size-full object-cover object-center sm:hidden" src="/images/backgroundimages/Smaller_Oceanic_Delight.jpg" alt="TrippinTheCurl wave" />
+            <img className="absolute inset-0 hidden size-full object-cover object-center sm:block" src={content.home.heroImage} alt="TrippinTheCurl wave" />
+          </>
         ) : null}
         <div className="absolute inset-0 bg-black/10" />
         <div className="relative z-10 mx-auto flex min-h-[72vh] max-w-7xl items-start justify-center px-4 pt-8 text-center sm:min-h-[calc(100vh-74px)] sm:px-6 sm:pt-14 lg:px-8 lg:pt-16">
@@ -602,7 +605,7 @@ function HomePage({ content, onNavigate }: { content: Content; onNavigate: (path
         </div>
       </section>
 
-      <section className="bg-[#bef1fe]">
+      <section className="bg-[#1f3e52]">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
           {content.home.featuredWorks.map((work) => (
             <button className="home-art-card" key={work.title} onClick={() => onNavigate("/portfolio")} type="button">
@@ -613,7 +616,7 @@ function HomePage({ content, onNavigate }: { content: Content; onNavigate: (path
         </div>
       </section>
 
-      <section className="border-y border-ink/10 bg-[#bef1fe]">
+      <section className="border-y border-ink/10 bg-[#c6eff9]">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <div>
             <h2 className="font-serif text-2xl font-bold uppercase italic leading-tight text-ink">
@@ -651,7 +654,7 @@ function HireMePage({ content }: { content: Content }) {
   return (
     <PageFrame eyebrow="Professional profile" title="Hire Me">
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <section className="bg-gallery p-6 shadow-fine sm:p-8">
+        <section className="order-2 bg-gallery p-6 shadow-fine sm:p-8 lg:order-1">
           <div className="mb-8 flex flex-col gap-4 border-b border-[#052434] pb-6 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="font-serif text-3xl font-semibold text-[#052434]">{content.resume.name}</h2>
@@ -716,9 +719,11 @@ function HireMePage({ content }: { content: Content }) {
             </ResumeSection>
           </div>
         </section>
-        <aside className="grid content-start gap-5">
-          <img className="w-full object-cover shadow-fine" src="/images/latest_selfie.jpg" alt="Maurice Johnson" />
+        <aside className="contents lg:order-2 lg:grid lg:content-start lg:gap-5">
+          <img className="order-1 w-full object-cover shadow-fine" src="/images/latest_selfie.jpg" alt="Maurice Johnson" />
+          <div className="order-3">
           <ContactCard content={content} />
+          </div>
         </aside>
       </div>
     </PageFrame>
@@ -772,7 +777,7 @@ function AboutPage({ content }: { content: Content }) {
   return (
     <PageFrame eyebrow="Artist statement" title={content.about.title}>
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <section className="grid gap-3 bg-gallery p-6 leading-7 text-graphite shadow-fine sm:p-8">
+        <section className="order-2 grid gap-3 bg-gallery p-6 leading-7 text-graphite shadow-fine sm:p-8 lg:order-1">
           {content.about.paragraphs.map((paragraph, index) => (
             <p
               className={index === 0 ? "text-[20px] italic" : paragraph === "A Brief Note:" ? "font-bold" : ""}
@@ -783,9 +788,11 @@ function AboutPage({ content }: { content: Content }) {
             </p>
           ))}
         </section>
-        <aside className="grid content-start gap-5">
-          <img className="w-full object-cover shadow-fine" src={content.about.portrait} alt="Maurice Johnson" />
+        <aside className="contents lg:order-2 lg:grid lg:content-start lg:gap-5">
+          <img className="order-1 w-full object-cover shadow-fine" src={content.about.portrait} alt="Maurice Johnson" />
+          <div className="order-3">
           <ContactCard content={content} />
+          </div>
         </aside>
       </div>
     </PageFrame>
@@ -999,7 +1006,7 @@ function PublicationsPage({ content }: { content: Content }) {
     <section className="bg-paper text-ink">
       {content.publications.map((book) => (
         <article key={book.title}>
-          <section className="bg-[#bef1fe]">
+          <section className="bg-[#c6eff9]">
             <div className="mx-auto grid max-w-7xl items-start gap-10 px-4 py-6 sm:px-6 lg:grid-cols-[1.2fr_0.9fr] lg:px-8 lg:py-7">
               <div className="order-2 lg:order-1">
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-black">{book.releaseStatus ?? "Now available"}</p>
@@ -1055,7 +1062,7 @@ function PublicationsPage({ content }: { content: Content }) {
           ) : null}
 
           {book.pressRelease ? (
-            <section className="bg-[#bef1fe]">
+            <section className="bg-[#c6eff9]">
               <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8">
                 <div className="grid gap-8 p-8 lg:grid-cols-[0.65fr_1fr] lg:p-12">
                   <div>
